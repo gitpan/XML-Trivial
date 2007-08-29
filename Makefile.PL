@@ -1,0 +1,17 @@
+use strict;
+use warnings;
+use ExtUtils::MakeMaker;
+
+WriteMakefile(
+    NAME                => 'XML::Trivial',
+    AUTHOR              => 'Jan Poslusny <pajout@cpan.org>',
+    VERSION_FROM        => 'lib/XML/Trivial.pm',
+    ABSTRACT_FROM       => 'lib/XML/Trivial.pm',
+    PL_FILES            => {},
+    PREREQ_PM => {
+        'Test::More' => 0,
+	'XML::Parser::Expat' => 2.34
+    },
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'XML-Trivial-*' },
+);
