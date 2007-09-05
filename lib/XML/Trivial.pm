@@ -5,7 +5,7 @@ use XML::Parser::Expat;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my @stack;
 my @nsstack = ({''=>'',
@@ -397,7 +397,7 @@ XML::Trivial - The trivial tool representing parsed XML as tree of read only obj
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 

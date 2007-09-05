@@ -3,3 +3,5 @@ Revision history for XML-Trivial
 0.01    2007-08-29
         First version.
 
+0.02	2007-09-05
+	Added test of parse().
