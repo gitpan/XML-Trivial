@@ -5,3 +5,9 @@ Revision history for XML-Trivial
 
 0.02	2007-09-05
 	Added test of parse().
+
+0.03	2007-09-29
+	Repaired serialization of attribute values and text nodes.
+	Added parsing of Doctype declaration.
+	Refined serialization of root node.
+	Added methods representing XML and Doctype declarations.

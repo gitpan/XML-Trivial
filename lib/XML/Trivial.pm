@@ -5,7 +5,7 @@ use XML::Parser::Expat;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my @stack;
 my @nsstack = ({''=>'',
@@ -27,6 +27,7 @@ sub parse {
     $cur = 0;
     my $expat = new XML::Parser::Expat;
     $expat->setHandlers(XMLDecl    => \&XML::Trivial::_xmldecl,
+			Doctype    => \&XML::Trivial::_doctype,
 			Start      => \&XML::Trivial::_startElement,
 			End        => \&XML::Trivial::_endElement,
 			Char       => \&XML::Trivial::_char,
@@ -44,8 +45,12 @@ sub parse {
 
 sub _xmldecl {
     my ($p, $ver, $enc, $std) = @_;
-    defined $std and $std = $std ? 'yes' : 'no';
     push @{$stack[$cur]},('-xml',[$ver,$enc,$std]);
+}
+
+sub _doctype {
+    my ($p, $nam, $sid, $pid, $int) = @_;
+    push @{$stack[$cur]},('-doc',[$nam, $sid, $pid, $int]);
 }
 
 sub _startElement {
@@ -213,6 +218,68 @@ sub p { #parent
     return tied(%$self)->{parent};
 }
 
+sub xv { #xml version
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->xv();
+    $s->{a}[0] eq '-xml' and return $s->{a}[1][0];
+    return '1.0';
+}
+
+sub xe { #xml encoding
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->xe();
+    $s->{a}[0] eq '-xml' and defined $s->{a}[1][1] and 
+	return $s->{a}[1][1];
+    return 'UTF-8';
+}
+
+sub xs { #xml standalone
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->xs();
+    $s->{a}[0] eq '-xml' and defined $s->{a}[1][2] and
+	return $s->{a}[1][2]?1:0;
+    return undef;
+}
+
+sub dn { #doctype name
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->dn();
+    my $i = 0;
+    while ($s->{a}[$i] =~ /^-/) {
+	$s->{a}[$i] eq '-doc' and return $s->{a}[$i+1][0];
+	$i += 2;
+    }
+    return undef;
+}
+
+sub ds { #doctype system
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->ds();
+    my $i = 0;
+    while ($s->{a}[$i] =~ /^-/) {
+	$s->{a}[$i] eq '-doc' and return $s->{a}[$i+1][1];
+	$i += 2;
+    }
+    return undef;
+}
+
+sub dp { #doctype public
+    my ($self) = @_;
+    my $s = tied(%$self);
+    defined $s->{parent} and return $s->{parent}->dp();
+    my $i = 0;
+    while ($s->{a}[$i] =~ /^-/) {
+	$s->{a}[$i] eq '-doc' and return $s->{a}[$i+1][2];
+	$i += 2;
+    }
+    return undef;
+}
+
 sub en { #element (qualified) name 
     my ($self) = @_;
     return tied(%$self)->{a}[0];
@@ -343,48 +410,60 @@ sub a { #all in the document order
     return tied(%$self)->{a}[$index];
 }
 
+
+
 sub sr { #serialize
     my ($self) = @_;
     my $s = tied(%$self);
-    my $ret;
+    my $ret = '';
     my $val;
-    if ($s->{a}[0] eq '-xml') {
-	$ret = "<?xml version='".$s->{a}[1][0]."'";
-	$s->{a}[1][1] and $ret .= " encoding='".$s->{a}[1][1]."'";
-	$s->{a}[1][2] and $ret .= " standalone='".$s->{a}[1][2]."'";
-	$ret .= "?>";
-    } else {
-	$ret = '<'.$s->{a}[0];
-	foreach (keys %{$s->{a}[1]}) {
-	    $val = $s->{a}[1]{$_};
-	    $val =~ s/\&/\&amp;/;
-	    $val =~ s/\'/\&apos;/;
-	    $val =~ s/</\&lt;/;
-	    $ret .= ' '.$_."='".$val."'";
-	}
-	$ret .= '>';
-    }
-    for (my $i = 2; $i < @{$s->{a}}; $i += 2) {
+    my $i = 0;
+    my $en;
+    my $pfix = "\n";
+    while ($s->{a}[$i]) {
 	if ($s->{a}[$i] =~ /^-(.*)$/) {
 	    if ($1 eq 'elm') {
 		$ret .= $s->{a}[$i+1]->sr;
 	    } elsif ($1 eq 'txt') {
 		$val = $s->{a}[$i+1];
-		$val =~ s/\&/\&amp;/;
-		$val =~ s/</\&lt;/;
-		$val =~ s/\]\]>/]]\&gt;/;
+		$val =~ s/\&/\&amp;/g;
+		$val =~ s/</\&lt;/g;
+		$val =~ s/\]\]>/]]\&gt;/g;
 	        $ret .= $val;
             } elsif ($1 eq 'cdt') {
 	        $ret .= '<![CDATA['.$s->{a}[$i+1].']]>';
             } elsif ($1 eq 'pro') {
-	        $ret .= '<?'.$s->{a}[$i+1][0].' '.$s->{a}[$i+1][1].'?>';
+	        $ret .= '<?'.$s->{a}[$i+1][0].' '.$s->{a}[$i+1][1].'?>'.$pfix;
             } elsif ($1 eq 'not') {
-	        $ret .= '<!--'.$s->{a}[$i+1].'-->';
-            }
-        }
+	        $ret .= '<!--'.$s->{a}[$i+1].'-->'.$pfix;
+            } elsif ($1 eq 'xml') {
+		$ret .= "<?xml version='".$s->{a}[$i+1][0]."'";
+		$s->{a}[$i+1][1] and $ret .= " encoding='".$s->{a}[$i+1][1]."'";
+		defined $s->{a}[$i+1][2] and $ret .= " standalone='".($s->{a}[$i+1][2]?'yes':'no')."'";
+		$ret .= "?>".$pfix;
+	    } elsif ($1 eq 'doc') {
+		$ret .= '<!DOCTYPE '.$s->{a}[$i+1][0];
+		$s->{a}[$i+1][1] and $ret .= ' SYSTEM \''.$s->{a}[$i+1][1].'\'';
+		$s->{a}[$i+1][2] and $ret .= ' PUBLIC \''.$s->{a}[$i+1][2].'\'';
+		$ret .= ">".$pfix;
+	    }
+	} else {
+	    $pfix = '';
+	    $en = $s->{a}[$i];
+	    $ret .= '<'.$en;
+	    foreach (keys %{$s->{a}[$i+1]}) {
+		$val = $s->{a}[$i+1]{$_};
+		$val =~ s/\&/\&amp;/g;
+		$val =~ s/\'/\&apos;/g;
+		$val =~ s/</\&lt;/g;
+		$ret .= ' '.$_."='".$val."'";
+	    }
+	    $ret .= '>';
+	}
+	$i += 2;
     }
-    $s->{a}[0] eq '-xml' and return $ret;
-    return $ret.'</'.$s->{a}[0].'>';
+    defined $en or return $ret;
+    return $ret.'</'.$en.'>';
 }
 
 1;
@@ -397,7 +476,7 @@ XML::Trivial - The trivial tool representing parsed XML as tree of read only obj
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -488,13 +567,31 @@ This xml document, represented by C<$xml>, is used in examples below.
 
 =head3 XML declaration 
 
-Dirty, but rarely used :)
+ print "xml version: ".$xml->xv()."\n";
 
- print "version: ".$xml->a(1)->[0]."\n";
- print "encoding: ".$xml->a(1)->[1]."\n";
- print "standalone: ".$xml->a(1)->[2]."\n";
+If xml declaration is not present in parsed document, '1.0' is returned as xml version.
 
-If some of described parts of xml declaration is not present, undef is returned. See XML::Parser::Expat documentation (find XMLDecl) for details.
+ print "xml encoding: ".$xml->xe()."\n";
+
+If xml declaration is not present in parsed document or encoding is not specified, 'UTF-8' is returned. REMEMBER that returned value reflects origin encoding of parsed document, perl internal representation is already in UTF-8.
+
+ print "xml standalone: ".$xml->xs()."\n";
+
+If xml declaration is not present in parsed document or standalone is not present, undef is returned. Otherwise, 1 is returned when standalone="yes" or 0 is returned when standalone="no".
+
+=head3 Doctype
+
+ print "doctype name: ".$xml->dn()."\n";
+
+If document type declaration present, it returns its name, otherwise returns undef.
+
+ print "doctype system: ".$xml->ds()."\n";
+
+If document type declaration and system part of external entity declaration present, it is returned, otherwise undef is returned.
+
+ print "doctype public: ".$xml->dp()."\n";
+
+If document type declaration and public part of external entity declaration present, it is returned, otherwise undef is returned.
 
 =head3 Document tree
 
@@ -517,6 +614,8 @@ If the non-negative integer is used as a key, the sibling on that position is re
 =head3 Element methods
 
 Describing particular methods, terms 'hash(ref)' and 'array(ref)' are used when returned type depends on calling context - in scalar context, method returns hashref or arrayref, in list context, method returns list (hash or array).
+
+All XML declaration methods and Doctype methods (see above) are usable on elements.
 
 =over
 
@@ -751,7 +850,7 @@ B<s>eB<r>ialize.
  print "whole document, serialized:\n";
  print $xml->sr;
 
-Returns serialized element or root node. For attribute values, it outputs apostrophes as delimiters, escaping ampersands, apostrophes and left brackets inside. For text values, it escapes ampersands, left brackets and ]]> sequence to ]]&gt;. Due to expat behaviour, there is nothing to serialize under root node excepting root element.
+Returns serialized element or root node. For attribute values, it outputs apostrophes as delimiters, escaping ampersands, apostrophes and left brackets inside. For text values, it escapes ampersands, left brackets and ]]> sequence (the last one to ]]&gt;). For better readability, the "\n" is appended when serializing child of root node which occurs before root element (xml declaration, doctype declaration, comment, processing instruction).
 
 =back
 
