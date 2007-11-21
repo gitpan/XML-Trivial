@@ -5,7 +5,7 @@ use XML::Parser::Expat;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 my @stack;
 my @nsstack = ({''=>'',
@@ -443,8 +443,9 @@ sub sr { #serialize
 		$ret .= "?>".$pfix;
 	    } elsif ($1 eq 'doc') {
 		$ret .= '<!DOCTYPE '.$s->{a}[$i+1][0];
-		$s->{a}[$i+1][1] and $ret .= ' SYSTEM \''.$s->{a}[$i+1][1].'\'';
 		$s->{a}[$i+1][2] and $ret .= ' PUBLIC \''.$s->{a}[$i+1][2].'\'';
+		$s->{a}[$i+1][1] and not $s->{a}[$i+1][2] and $ret .= ' SYSTEM';
+		$s->{a}[$i+1][1] and $ret .= ' \''.$s->{a}[$i+1][1].'\'';
 		$ret .= ">".$pfix;
 	    }
 	} else {

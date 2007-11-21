@@ -11,3 +11,7 @@ Revision history for XML-Trivial
 	Added parsing of Doctype declaration.
 	Refined serialization of root node.
 	Added methods representing XML and Doctype declarations.
+
+0.04	2007-11-21
+	Repaired serialization of Doctype declaration.
+	Added some tests.
