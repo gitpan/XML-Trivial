@@ -15,3 +15,6 @@ Revision history for XML-Trivial
 0.04	2007-11-21
 	Repaired serialization of Doctype declaration.
 	Added some tests.
+
+0.05	2007-12-05
+	XML::Parser::Expat instance is released after parsing.

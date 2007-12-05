@@ -5,7 +5,7 @@ use XML::Parser::Expat;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 my @stack;
 my @nsstack = ({''=>'',
@@ -37,6 +37,7 @@ sub parse {
 			CdataEnd   => \&XML::Trivial::_endCDATA
 		       );
     $expat->parse(@_);
+    $expat->release;
     my $ret = XML::Trivial::Element->new($stack[0]);
     return $ret;
 }
@@ -477,7 +478,7 @@ XML::Trivial - The trivial tool representing parsed XML as tree of read only obj
 
 =head1 VERSION
 
-Version 0.03
+Version 0.05
 
 =head1 SYNOPSIS
 
@@ -905,9 +906,11 @@ L<http://search.cpan.org/dist/XML-Trivial>
 
 =back
 
-=head1 COPYRIGHT & LICENSE
+=head1 COPYRIGHT
 
-Copyright 2007 Jan Poslusny, all rights reserved.
+Copyright 2007 Jan Poslusny.
+
+=head1 LICENSE 
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
