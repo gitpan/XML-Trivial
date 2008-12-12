@@ -5,7 +5,7 @@ use XML::Parser::Expat;
 use strict;
 use warnings;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 my @stack;
 my @nsstack = ({''=>'',
@@ -112,7 +112,7 @@ sub _endCDATA {
 
 
 package XML::Trivial::Element;
-
+use Scalar::Util 'weaken';
 use strict;
 use warnings;
 
@@ -125,6 +125,7 @@ sub new {
     my $s = tied(%$self);
     foreach (@{$s->{ea}}) {
 	tied(%$_)->{parent} = $self;
+	weaken(tied(%$_)->{parent});#because it is circular ref
 	$key = $_->ns(undef).'*'.$_->ln();
 	$ehns{$key} = $_ unless exists $ehns{$key};
     }
@@ -478,7 +479,7 @@ XML::Trivial - The trivial tool representing parsed XML as tree of read only obj
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 

@@ -18,3 +18,7 @@ Revision history for XML-Trivial
 
 0.05	2007-12-05
 	XML::Parser::Expat instance is released after parsing.
+
+0.06	2008-12-12
+	Weakened reference to parent element. Memory leaks caused
+	by circular references avoided.

@@ -11,7 +11,8 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More'         => '>= 0.62',
-	'XML::Parser::Expat' => '>= 2.34'
+	'XML::Parser::Expat' => '>= 2.34',
+	'Scalar::Util'       => '>= 1.18'
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'XML-Trivial-*' },

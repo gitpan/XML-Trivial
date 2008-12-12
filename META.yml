@@ -1,15 +1,13 @@
---- #YAML:1.0
-name:                XML-Trivial
-version:             0.05
-abstract:            The trivial tool representing parsed XML as tree of read only objects.
-license:             perl
-generated_by:        ExtUtils::MakeMaker version 6.36
-distribution_type:   module
-requires:     
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         XML-Trivial
+version:      0.06
+version_from: lib/XML/Trivial.pm
+installdirs:  site
+requires:
+    Scalar::Util:                  >= 1.18
     Test::More:                    >= 0.62
     XML::Parser::Expat:            >= 2.34
-meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - Jan Poslusny <pajout@cpan.org>
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.30_01
